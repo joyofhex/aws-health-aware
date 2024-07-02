@@ -737,35 +737,14 @@ def get_secret(secret_name, client):
         return get_secret_value_response["SecretString"]
 
 
-def describe_events(health_client):
+def describe_events(health_client, event_filter):
     str_ddb_format_sec = "%s"
     # set hours to search back in time for events
-    delta_hours = os.environ["EVENT_SEARCH_BACK"]
-    health_event_type = os.environ["HEALTH_EVENT_TYPE"]
-    delta_hours = int(delta_hours)
-    time_delta = datetime.now() - timedelta(hours=delta_hours)
-    print("Searching for events and updates made after: ", time_delta)
-    dict_regions = os.environ["REGIONS"]
 
-    str_filter = {"lastUpdatedTimes": [{"from": time_delta}]}
-
-    if health_event_type == "issue":
-        event_type_filter = {"eventTypeCategories": ["issue", "investigation"]}
-        print(
-            "AHA will be monitoring events with event type categories as 'issue' only!"
-        )
-        str_filter.update(event_type_filter)
-
-    if dict_regions != "all regions":
-        dict_regions = [region.strip() for region in dict_regions.split(",")]
-        print(
-            "AHA will monitor for events only in the selected regions: ", dict_regions
-        )
-        region_filter = {"regions": dict_regions}
-        str_filter.update(region_filter)
+    print("Searching for events and updates made after: ", event_filter.last_updated_time())
 
     event_paginator = health_client.get_paginator("describe_events")
-    event_page_iterator = event_paginator.paginate(filter=str_filter)
+    event_page_iterator = event_paginator.paginate(filter=event_filter.filter())
     for response in event_page_iterator:
         events = response.get("events", [])
         aws_events = json.dumps(events, default=myconverter)
@@ -815,37 +794,14 @@ def describe_events(health_client):
             print("No events found in time frame, checking again in 1 minute.")
 
 
-def describe_org_events(health_client):
+def describe_org_events(health_client, event_filter):
     str_ddb_format_sec = "%s"
-    # set hours to search back in time for events
-    delta_hours = os.environ["EVENT_SEARCH_BACK"]
-    health_event_type = os.environ["HEALTH_EVENT_TYPE"]
-    dict_regions = os.environ["REGIONS"]
-    delta_hours = int(delta_hours)
-    time_delta = datetime.now() - timedelta(hours=delta_hours)
-    print("Searching for events and updates made after: ", time_delta)
-
-    str_filter = {"lastUpdatedTime": {"from": time_delta}}
-
-    if health_event_type == "issue":
-        event_type_filter = {"eventTypeCategories": ["issue", "investigation"]}
-        print(
-            "AHA will be monitoring events with event type categories as 'issue' only!"
-        )
-        str_filter.update(event_type_filter)
-
-    if dict_regions != "all regions":
-        dict_regions = [region.strip() for region in dict_regions.split(",")]
-        print(
-            "AHA will monitor for events only in the selected regions: ", dict_regions
-        )
-        region_filter = {"regions": dict_regions}
-        str_filter.update(region_filter)
+    print("Searching for events and updates made after: ", event_filter.last_updated_from_time())
 
     org_event_paginator = health_client.get_paginator(
         "describe_events_for_organization"
     )
-    org_event_page_iterator = org_event_paginator.paginate(filter=str_filter)
+    org_event_page_iterator = org_event_paginator.paginate(filter=event_filter.filter())
     for response in org_event_page_iterator:
         events = response.get("events", [])
         aws_events = json.dumps(events, default=myconverter)
@@ -1041,12 +997,70 @@ def main(event, context):
         print(
             "AWS Organizations is not enabled. Only Service Health Dashboard messages will be alerted."
         )
-        describe_events(health_client)
+        event_filter = EventFilter(organization=False)
+        describe_events(health_client, event_filter)
     else:
         print(
             "AWS Organizations is enabled. Personal Health Dashboard and Service Health Dashboard messages will be alerted."
         )
-        describe_org_events(health_client)
+        event_filter = EventFilter(organization=True)
+        describe_org_events(health_client, event_filter)
+
+
+class EventFilter:
+    def __init__(self, organization: bool = False):
+        self.organization = organization
+        self.regions = self.regions_from_env()
+        self.event_types = self.event_types_from_env()
+        self.time_delta = self.time_delta_from_env()
+        self.last_updated_from_time = datetime.now() - timedelta(hours=self.time_delta)
+
+    @staticmethod
+    def event_types_from_env():
+        event_types = os.environ["HEALTH_EVENT_TYPE"]
+        if event_types == "issue":
+            print(
+                "AHA will be monitoring events with event type categories as 'issue' only!"
+            )
+            return ["issue", "investigation"]
+        else:
+            return None
+
+    @staticmethod
+    def regions_from_env():
+        regions = os.environ["REGIONS"]
+        if regions == "all regions":
+            return None
+        else:
+            regions = [region.strip() for region in regions.split(",")]
+            print(f"AHA will monitor for events only in the selected regions: {regions}")
+            return regions
+
+    @staticmethod
+    def time_delta_from_env():
+        return int(os.environ["EVENT_SEARCH_BACK"])
+
+    def filter(self):
+        filter_dict = self.last_updated_time()
+        if self.event_types:
+            filter_dict["eventTypeCategories"] = self.event_types
+        if self.regions:
+            filter_dict["regions"] = self.regions
+
+        return filter_dict
+
+    def last_updated_time(self):
+        return {
+            self.last_update_time_key(): [
+                {"from": self.last_updated_from_time}
+            ]
+        }
+
+    def last_update_time_key(self):
+        if self.organization:
+            return "lastUpdatedTime"
+        else:
+            return "lastUpdatedTimes"
 
 
 if __name__ == "__main__":
