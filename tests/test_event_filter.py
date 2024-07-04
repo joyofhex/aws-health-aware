@@ -43,12 +43,12 @@ class TestEventFilter(unittest.TestCase):
         os.environ["EVENT_SEARCH_BACK"] = "300"
         event_filter = EventFilter()
 
-        self.assertEqual(event_filter.event_types, ['issue', 'investigation'])
+        self.assertEqual(event_filter.event_types, ['issue'])
 
     def test_non_org_mode_filter(self):
         os.environ["HEALTH_EVENT_TYPE"] = "issue"
         os.environ["REGIONS"] = "all regions"
-        os.environ["EVENT_SEARCH_BACK"] = "240" # 240 hours = 10 days
+        os.environ["EVENT_SEARCH_BACK"] = "240"  # 240 hours = 10 days
 
         with patch('handler.datetime') as mock_datetime:
             mock_datetime.now.return_value = datetime(2024, 10, 30)
@@ -58,7 +58,7 @@ class TestEventFilter(unittest.TestCase):
         self.assertEqual(
             result,
             {
-                'eventTypeCategories': ['issue', 'investigation'],
+                'eventTypeCategories': ['issue'],
                 'lastUpdatedTimes': [{'from': datetime(2024, 10, 20, 0, 0)}]
             }
         )
@@ -66,7 +66,7 @@ class TestEventFilter(unittest.TestCase):
     def test_org_mode_filter(self):
         os.environ["HEALTH_EVENT_TYPE"] = "issue"
         os.environ["REGIONS"] = "all regions"
-        os.environ["EVENT_SEARCH_BACK"] = "240" # 240 hours = 10 days
+        os.environ["EVENT_SEARCH_BACK"] = "240"  # 240 hours = 10 days
 
         with patch('handler.datetime') as mock_datetime:
             mock_datetime.now.return_value = datetime(2024, 10, 30)
@@ -76,10 +76,37 @@ class TestEventFilter(unittest.TestCase):
         self.assertEqual(
             result,
             {
-                'eventTypeCategories': ['issue', 'investigation'],
+                'eventTypeCategories': ['issue'],
                 'lastUpdatedTime': [{'from': datetime(2024, 10, 20, 0, 0)}]
             }
         )
+
+    def test_no_type_env_variable_set(self):
+        if "HEALTH_EVENT_TYPE" in os.environ:
+            del os.environ["HEALTH_EVENT_TYPE"]
+
+        os.environ["REGIONS"] = "all regions"
+        os.environ["EVENT_SEARCH_BACK"] = "300"
+        event_filter = EventFilter()
+
+        self.assertEqual(event_filter.event_types, None)
+
+    def test_incorrect_type_in_env_var_is_filtered(self):
+        os.environ["HEALTH_EVENT_TYPE"] = "issue, investigation, nonExistingCategory"
+
+        os.environ["REGIONS"] = "all regions"
+        os.environ["EVENT_SEARCH_BACK"] = "300"
+        event_filter = EventFilter()
+
+        self.assertEqual(event_filter.event_types, ['investigation', 'issue'])
+
+    def test_previous_default_value(self):
+        os.environ["HEALTH_EVENT_TYPE"] = "issue | accountNotification | scheduledChange"
+        os.environ["REGIONS"] = "all regions"
+        os.environ["EVENT_SEARCH_BACK"] = "300"
+        event_filter = EventFilter()
+
+        self.assertEqual(event_filter.event_types, None)
 
 
 if __name__ == '__main__':

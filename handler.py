@@ -801,7 +801,7 @@ def describe_events(health_client, event_filter):
 
 def describe_org_events(health_client, event_filter):
     str_ddb_format_sec = "%s"
-    print("Searching for events and updates made after: ", event_filter.last_updated_from_time())
+    print("Searching for events and updates made after: ", event_filter.last_updated_from_time)
 
     org_event_paginator = health_client.get_paginator(
         "describe_events_for_organization"
@@ -1022,12 +1022,24 @@ class EventFilter:
 
     @staticmethod
     def event_types_from_env():
-        event_types = os.environ["HEALTH_EVENT_TYPE"]
-        if event_types == "issue":
-            print(
-                "AHA will be monitoring events with event type categories as 'issue' only!"
-            )
-            return ["issue", "investigation"]
+        allowed_types = {"issue", "investigation", "accountNotification", "scheduledChange"}
+        event_types = os.environ.get("HEALTH_EVENT_TYPE", "")
+
+        # if HEALTH_EVENT_TYPE contains the previous default value assume that we want all types
+        if event_types == "issue | accountNotification | scheduledChange":
+            return None
+
+        event_types = {event_type.strip() for event_type in event_types.split(",") if event_type}
+
+        unknown_types = event_types - allowed_types
+        event_types = allowed_types & event_types
+
+        if unknown_types:
+            logger.error(f"Unknown event types configured: {', '.join(unknown_types)}")
+
+        if event_types:
+            logger.info(f"AHA will monitor events with event types: {', '.join(event_types)}")
+            return sorted(event_types)
         else:
             return None
 
@@ -1056,9 +1068,7 @@ class EventFilter:
 
     def last_updated_time(self):
         return {
-            self.last_update_time_key(): [
-                {"from": self.last_updated_from_time}
-            ]
+            self.last_update_time_key(): {"from": self.last_updated_from_time}
         }
 
     def last_update_time_key(self):

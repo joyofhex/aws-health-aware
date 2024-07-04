@@ -189,7 +189,7 @@ The 3 deployment methods for AHA are:
 6. Under *Template Source* **click** *Upload a template file* and **click** *Choose file*  and select `CFN_DEPLOY_AHA.yml` **Click** *Next*.   
  - In *Stack name* type a stack name (i.e. AHA-Deployment).
  - In *AWSOrganizationsEnabled* leave it set to default which is `No`. If you do have AWS Organizations enabled and you want to aggregate across all your accounts, you should be following the steps for [AHA for users who ARE using AWS Organizations (Management Account)](#aha-with-aws-organizations-on-management-account-using-cloudformation) or [AHA for users WITH AWS Organizations (Member Account)](#aha-with-aws-organizations-on-member-account-using-cloudformation)
- - In *AWSHealthEventType* select whether you want to receive *all* event types or *only* issues.   
+ - In *AWSHealthEventType* enter the (comma-separated list of) event types you want to receive. The default is all available.
  - In *S3Bucket* type ***just*** the bucket name of the S3 bucket used in step 3  (e.g. my-aha-bucket).    
  - In *S3Key* type ***just*** the name of the .zip file you created in Step 2 (e.g. aha-v1.8.zip).     
  - In the *Communications Channels* section enter the URLs, Emails and/or ARN of the endpoints you configured previously.  
@@ -226,8 +226,7 @@ The 3 deployment methods for AHA are:
 6. Under *Template Source* **click** *Upload a template file* and **click** *Choose file*  and select `CFN_DEPLOY_AHA.yml` **Click** *Next*.   
  - In *Stack name* type a stack name (i.e. AHA-Deployment).
  - In *AWSOrganizationsEnabled* change the dropdown to `Yes`. If you do NOT have AWS Organizations enabled you should be following the steps for [AHA for users who are NOT using AWS Organizations](#aha-without-aws-organizations-using-cloudformation)  
- - In *AWSHealthEventType* select whether you want to receive *all* event types or *only* issues.   
- - In *S3Bucket* type ***just*** the bucket name of the S3 bucket used in step 3  (e.g. my-aha-bucket).    
+ - In *AWSHealthEventType* enter the (comma-separated list of) event types you want to receive. The default is all available. - In *S3Bucket* type ***just*** the bucket name of the S3 bucket used in step 3  (e.g. my-aha-bucket).    
  - In *S3Key* type ***just*** the name of the .zip file you created in Step 2 (e.g. aha-v1.8.zip).     
  - In the *Communications Channels* section enter the URLs, Emails and/or ARN of the endpoints you configured previously.  
  - In the *Email Setup* section enter the From and To Email addresses as well as the Email subject. If you aren't configuring email, just leave it as is.
@@ -276,7 +275,7 @@ See: [Using AWS Health Delegated Administrator with AHA](#using-aws-health-deleg
 14. Under *Template Source* **click** *Upload a template file* and **click** *Choose file*  and select `CFN_DEPLOY_AHA.yml` **Click** *Next*.
  - In *Stack name* type a stack name (i.e. AHA-Deployment).
  - In *AWSOrganizationsEnabled* change the dropdown to `Yes`. If you do NOT have AWS Organizations enabled you should be following the steps for [AHA for users who are NOT using AWS Organizations](#aha-without-aws-organizations-using-cloudformation)
- - In *AWSHealthEventType* select whether you want to receive *all* event types or *only* issues.
+ - In *AWSHealthEventType* enter the (comma-separated list of) event types you want to receive. The default is all available.
  - In *S3Bucket* type ***just*** the bucket name of the S3 bucket used in step 12  (e.g. my-aha-bucket).
  - In *S3Key* type ***just*** the name of the .zip file you created in Step 11 (e.g. aha-v1.8.zip).
  - In the *Communications Channels* section enter the URLs, Emails and/or ARN of the endpoints you configured previously.

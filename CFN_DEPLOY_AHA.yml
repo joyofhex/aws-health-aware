@@ -127,11 +127,13 @@ Parameters:
     Description: >-
       Select the event type that you want AHA to report on. Refer to
       https://docs.aws.amazon.com/health/latest/APIReference/API_EventType.html for more information on EventType.
-    Default: 'issue | accountNotification | scheduledChange'
+    Default: 'issue, accountNotification, scheduledChange, investigation'
     AllowedValues:
-      - 'issue | accountNotification | scheduledChange'
       - 'issue'
-    Type: String
+      - 'accountNotification'
+      - 'scheduledChange'
+      - 'investigation'
+    Type: CommaDelimitedList
   S3Bucket:
     Description: >-
       Name of your S3 Bucket where the AHA Package .zip resides. Just the name
@@ -261,6 +263,9 @@ Resources:
     Type: AWS::CloudFormation::StackSet
     Properties:
       Description: Secondary Region CloudFormation Template for AWS Health Aware (AHA)
+      Parameters:
+        - ParameterKey: AWSHealthEventType
+          ParameterValue: !Join [",", !Ref AWSHealthEventType]
       PermissionModel: SELF_MANAGED 
       Capabilities: [CAPABILITY_IAM]
       StackInstancesGroup:
@@ -272,6 +277,9 @@ Resources:
       StackSetName: 'aha-multi-region'
       TemplateBody: 
         !Sub |
+          Parameters:
+            AWSHealthEventType:
+              Type: String
           Resources:
               AHA2ndRegionBucket:
                 Type: AWS::S3::Bucket 
@@ -414,7 +422,7 @@ Resources:
                       DYNAMODB_TABLE: "${GlobalDDBTable}"
                       EVENT_SEARCH_BACK: ${EventSearchBack}
                       ORG_STATUS: ${AWSOrganizationsEnabled}
-                      HEALTH_EVENT_TYPE: "${AWSHealthEventType}"
+                      HEALTH_EVENT_TYPE: !Ref AWSHealthEventType
                       MANAGEMENT_ROLE_ARN: "${ManagementAccountRoleArn}"
   LambdaExecutionRole:
     Type: 'AWS::IAM::Role'
@@ -679,8 +687,7 @@ Resources:
             Ref: EventSearchBack
           ORG_STATUS:
             Ref: AWSOrganizationsEnabled
-          HEALTH_EVENT_TYPE:
-            Ref: AWSHealthEventType
+          HEALTH_EVENT_TYPE: !Join [",", !Ref AWSHealthEventType]
           MANAGEMENT_ROLE_ARN:
             Ref: ManagementAccountRoleArn
               
