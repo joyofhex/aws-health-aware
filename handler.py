@@ -801,11 +801,9 @@ def describe_events(health_client):
                 )
                 event_details = json.loads(event_details)
                 print("Event Details: ", event_details)
-                if event_details["successfulSet"] == []:
+                if not event_details["successfulSet"]:
                     print(
-                        "An error occured with account:",
-                        event_details["failedSet"][0]["awsAccountId"],
-                        "due to:",
+                        "An error occurred due to:",
                         event_details["failedSet"][0]["errorName"],
                         ":",
                         event_details["failedSet"][0]["errorMessage"],
@@ -908,9 +906,9 @@ def describe_org_events(health_client):
                 )
                 event_details = json.loads(event_details)
                 print("Event Details: ", event_details)
-                if event_details["successfulSet"] == []:
+                if not event_details["successfulSet"]:
                     print(
-                        "An error occured with account:",
+                        "An error occurred with account:",
                         event_details["failedSet"][0]["awsAccountId"],
                         "due to:",
                         event_details["failedSet"][0]["errorName"],
